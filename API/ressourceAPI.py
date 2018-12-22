@@ -1,9 +1,9 @@
 import psutil
+import xml.dom.minidom
 
 def get_cpu_usage():
-    return psutil.cpu_percent(interval=1,percpu=True)
+    return tuple(psutil.cpu_percent(interval=1,percpu=True))
     #[0.0, 0.0, 0.0, 3.0]
-
 
 def get_cpu_times():
     d=[]
@@ -20,6 +20,7 @@ def get_cpu_times():
                     "guest_nice":elm.guest_nice
                     })
     return d
+
     #[  
     #    {'softirq': 0.0, 'idle': 98.0, 'user': 2.0, 'guest_nice': 0.0, 'irq': 0.0, 'iowait': 0.0, 'steal': 0.0, 'system': 0.0, 'guest': 0.0, 'nice': 0.0},
     #    {'softirq': 0.0, 'idle': 99.0, 'user': 1.0, 'guest_nice': 0.0, 'irq': 0.0, 'iowait': 0.0, 'steal': 0.0, 'system': 0.0, 'guest': 0.0, 'nice': 0.0},
@@ -29,10 +30,10 @@ def get_cpu_times():
     #
 
 def get_cpu_count_logical():
-    return psutil.cpu_count(logical=True)
+    return (psutil.cpu_count(logical=True),)
 
 def get_cpu_count_physical():
-    return psutil.cpu_count(logical=False)
+    return (psutil.cpu_count(logical=False),)
 
 def get_cpu_stats():
     a=psutil.cpu_stats()
@@ -57,6 +58,7 @@ def get_cpu_freq():
                     "max":elm.max
                 })
     return d
+
     #[
     #    {'current': 2083.561, 'max': 2700.0, 'min': 500.0},
     #    {'current': 1233.341, 'max': 2700.0, 'min': 500.0},
@@ -116,15 +118,56 @@ def get_disk_partitions():
     return [ {'device':elm.device,'mountpoint':elm.mountpoint ,'fstype':elm.fstype,'opts':elm.opts} for elm in psutil.disk_partitions(all=True)]
 def get_disk_usage():
     a=get_disk_partitions()
-    d={}
+    d=[]
     #sdiskusage(total=0, used=0, free=0, percent=0.0)
     for elm in a :
-        d[elm['device']]=   {
-                                'total':psutil.disk_usage(elm['mountpoint']).total ,
-                                'used':psutil.disk_usage(elm['mountpoint']).used ,
-                                'free':psutil.disk_usage(elm['mountpoint']).free ,
-                                'percent':psutil.disk_usage(elm['mountpoint']).percent
-                            }
+        d.append({  'device':elm['device'],
+                    'mountpoint':elm['mountpoint'],
+                    'fstype':elm['fstype'],
+                    'opts':elm['opts'],
+                    'total':psutil.disk_usage(elm['mountpoint']).total ,
+                    'used':psutil.disk_usage(elm['mountpoint']).used ,
+                    'free':psutil.disk_usage(elm['mountpoint']).free ,
+                    'percent':psutil.disk_usage(elm['mountpoint']).percent
+                }
+                )
     return d 
+
+def xmlise_data(function_name):
+    print "xmlise_date called with argument : %s "%type(function_name) ,function_name
+    string="<%s>"%function_name
+    try :
+        data=globals()[function_name]()
+        if type(data) is tuple :
+            for i,elm in enumerate(data) :
+                string+="<data id='%d' value='%d' />"%(i,elm)
+        elif type(data) is list :
+            for i,elm in enumerate(data):
+                string+="<data id='%d' >"%i
+                for k in elm.keys():
+                    string+="<item name='%s' value='%s' />"%(k,str(elm[k]))
+                string+="</data>"
+        elif type(data) is dict :
+            for k in data.keys():
+                string+="<data name='%s' value='%s' />"%(k,str(data[k]))
+
+    except Exception as e :
+        a=repr(e)+" in xmlise_data"
+        string+="""<exception value="%s" />"""%str(a)
+
+
+    string+="</%s>"%function_name
+
+    return xml.dom.minidom.parseString(string).toprettyxml()
+
+
+
 if __name__=="__main__":
-    print  get_disk_usage()
+    print  xmlise_data('get_swap_memoy')
+    d=dict(locals())
+    print d
+    for elm in d.keys():
+        if callable(d[elm]) :
+            print xmlise_data(elm)
+        print "**********************"
+        print "**********************"
