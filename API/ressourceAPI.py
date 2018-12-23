@@ -1,4 +1,5 @@
 import psutil
+import datetime
 import xml.dom.minidom
 
 def get_cpu_usage():
@@ -140,7 +141,7 @@ def xmlise_data(function_name):
         data=globals()[function_name]()
         if type(data) is tuple :
             for i,elm in enumerate(data) :
-                string+="<data id='%d' value='%d' />"%(i,elm)
+                string+="<data id='%d' value='%s' />"%(i,str(elm))
         elif type(data) is list :
             for i,elm in enumerate(data):
                 string+="<data id='%d' >"%i
@@ -161,13 +162,70 @@ def xmlise_data(function_name):
     return xml.dom.minidom.parseString(string).toprettyxml()
 
 
+def get_net_io_counters():
+	data=psutil.net_io_counters(pernic=True, nowrap=True)
+	r=[]
+	for k,v in data.items():
+		r.append({	"interface":k,
+				"bytes_sent":v.bytes_sent,
+				"bytes_recv":v.bytes_recv,
+				"packets_sent":v.packets_sent,
+				"packets_recv":v.packets_recv,
+				"errin":v.errin,
+				"errout":v.errout,
+				"dropin":v.dropin,
+				"dropout":v.dropout
+			})
+	return r
 
+def get_connections():
+	data=psutil.net_connections(kind='inet')
+	r=[]
+	for elm in data :
+		r.append({
+				"fd":elm.fd,
+				"family":elm.family,
+				"type":elm.type,
+				"laddr":elm.laddr.ip if type(elm.laddr)!=tuple else "*",
+				"lport":elm.laddr.port if type(elm.laddr)!=tuple else "*",
+				"raddr":elm.raddr.ip if type(elm.raddr)!=tuple else "*",
+				"rport":elm.raddr.port if type(elm.raddr)!=tuple else "*",
+				"status":elm.status,
+				"pid":elm.pid
+			})
+	return r 
+		
+def get_if_addr():
+	data=psutil.net_if_addrs()
+	r=[]
+	for k,v in data.items():
+		for elm in v :
+			r.append({
+					"interface":k,
+					"family":elm.family,
+					"address":elm.address,
+					"netmask":elm.netmask,
+					"broadcast":elm.broadcast,
+					"ptp":elm.ptp
+				})
+	return r 
+def get_boot_time():
+	return (datetime.datetime.fromtimestamp(psutil.boot_time()).strftime("%Y-%m-%d %H:%M:%S") ,)
+
+def get_users():
+	data=psutil.users()
+	r=[]
+	for elm in data :
+		r.append({
+				"name":elm.name,
+				"terminal":elm.terminal,
+				"host":elm.host,
+				"started":elm.started,
+				"pid":elm.pid
+				})
+		
+	return r 
+	
+			
 if __name__=="__main__":
-    print  xmlise_data('get_swap_memoy')
-    d=dict(locals())
-    print d
-    for elm in d.keys():
-        if callable(d[elm]) :
-            print xmlise_data(elm)
-        print "**********************"
-        print "**********************"
+	print  xmlise_data('get_users')
