@@ -9,17 +9,23 @@ def get_cpu_usage():
 def get_cpu_times():
     d=[]
     for elm in psutil.cpu_times_percent(interval=1, percpu=True):
-        d.append({  "user":elm.user,
-                    "nice":elm.nice,
-                    "system":elm.system,
-                    "idle":elm.idle,
-                    "iowait":elm.iowait,
-                    "irq":elm.irq,
-                    "softirq":elm.softirq,
-                    "steal":elm.steal,
-                    "guest":elm.guest,
-                    "guest_nice":elm.guest_nice
-                    })
+	r={}
+	for e in ["user","nice","system","idle","iowait","irq","softirq","steal","guest","guest_nice"] :
+		if e not in elm._fields:
+			r[e]="?"
+			continue
+		r[e]=elm._asdict()[e]
+        #r["user"]=elm.user
+        #r["nice"]=elm.nice
+        #r["system"]=elm.system
+        #r["idle"]=elm.idle
+        #r["iowait"]=elm.iowait
+        #r["irq"]=elm.irq
+        #r["softirq"]=elm.softirq
+        #r["steal"]=elm.steal
+        #r["guest"]=elm.guest
+        #r["guest_nice"]=elm.guest_nice
+	d.append(r)
     return d
 
     #[  
@@ -70,16 +76,16 @@ def get_cpu_freq():
 def get_vir_memory():
     a=psutil.virtual_memory()
     return {
-                "total":a.total,
-                "available":a.available,
-                "percent":a.percent,
-                "used":a.used,
-                "free":a.free,
-                "active":a.active,
-                "inactive":a.inactive,
-                "buffers":a.buffers,
-                "cached":a.cached,
-                "shared":a.shared
+                "total":a.total  if ("total" in a._fields) else "?" ,
+                "available":a.available if ("available" in a._fields) else "?" ,
+                "percent":a.percent if ("percent" in a._fields) else "?",
+                "used":a.used if ("used" in a._fields) else "?",
+                "free":a.free if ("free" in a._fields) else "?",
+                "active":a.active if ("active" in a._fields) else "?",
+                "inactive":a.inactive if ("inactive" in a._fields) else "?",
+                "buffers":a.buffers if ("buffers" in a._fields) else "?",
+                "cached":a.cached if ("cached" in a._fields) else "?",
+                "shared":a.shared if ("shared" in a._fields) else "?"
             }
     #{
     #        'available': 1012891648,
@@ -228,4 +234,5 @@ def get_users():
 	
 			
 if __name__=="__main__":
-	print  xmlise_data('get_users')
+	print get_vir_memory()
+	print  xmlise_data('get_vir_memory')
