@@ -1,4 +1,5 @@
 import psutil
+import re
 import datetime
 import xml.dom.minidom
 
@@ -140,9 +141,14 @@ def get_disk_usage():
                 )
     return d 
 
+def json_data(function_name):
+    r=xmlise_data(function_name)
+    return  r
 def xmlise_data(function_name):
+    func_=re.sub("\s+","_",function_name)
+
     print "xmlise_date called with argument : %s "%type(function_name) ,function_name
-    string="<%s>"%function_name
+    string="<%s>"%func_
     try :
         data=globals()[function_name]()
         if type(data) is tuple :
@@ -163,8 +169,10 @@ def xmlise_data(function_name):
         string+="""<exception value="%s" />"""%str(a)
 
 
-    string+="</%s>"%function_name
+    string+="</%s>"%func_
+    return string
 
+def well_printed(string):
     return xml.dom.minidom.parseString(string).toprettyxml()
 
 
@@ -234,5 +242,4 @@ def get_users():
 	
 			
 if __name__=="__main__":
-	print get_vir_memory()
-	print  xmlise_data('get_vir_memory')
+	print  json_data('get_vir_memoryll')
